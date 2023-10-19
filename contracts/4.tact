@@ -75,12 +75,11 @@ contract Task4 with Deployable {
           forwardPayload: emptySlice()
         }.toCell()
       });
-      return;
+    } else {
+      self.nftAddress = context().sender;
+      self.timeToLock = now() + msg.forwardPayload.loadUint(32);
+      self.preOwnerNft = msg.prevOwner;
     }
-
-    self.nftAddress = context().sender;
-    self.timeToLock = now() + msg.forwardPayload.loadUint(32);
-    self.preOwnerNft = msg.prevOwner;
   }
 
   receive(msg: NftWithdrawal) {
@@ -106,24 +105,23 @@ contract Task4 with Deployable {
         }.toCell()
     });
 
-      // clear
-      self.nftAddress = newAddress(0, 0);
-      self.timeToLock = 0;
-      self.preOwnerNft = newAddress(0, 0);
+    // clear
+    self.nftAddress = newAddress(0, 0);
+    self.timeToLock = 0;
+    self.preOwnerNft = newAddress(0, 0);
   }
 
   get fun time(): Int {
-    if (self.timeToLock > now()) {
-      return self.timeToLock - now();
-    }
-    return 0;
+    return self.timeToLock - now();
   }
 
   get fun nft(): Address? {
+    require(self.nftAddress != newAddress(0, 0), "NFT is not locked");
     return self.nftAddress;
   }
 
   get fun owner(): Address? {
+    require(self.nftAddress != newAddress(0, 0), "NFT is not locked");
     return self.preOwnerNft;
   }
 }
