@@ -45,11 +45,6 @@ message NftWithdrawal {
   queryId: Int as uint64;
   nftAddress: Address;
 }
-
-  message(0xd53276db) Excesses {
-    query_id: Int as uint64;
-  }
-
   
 
 contract Task4 with Deployable {
@@ -70,15 +65,7 @@ contract Task4 with Deployable {
     self.isLocked = false;
   }
 
-  receive(msg: Excesses) {
-      send(SendParameters{value: 0, to: self.preOwnerNft, mode: SendRemainingValue + SendIgnoreErrors});
-  }
-
   receive(msg: OwnershipAssigned) {
-    let msgValue: Int = context().value; // Check the gasCost for storage
-    let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
-    let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
-    msgValue = msgValue - (storageFee + self.gasConsumption);
     require(!self.isLocked, "NFT is already locked");
 
     self.nftAddress = context().sender;
@@ -128,7 +115,7 @@ contract Task4 with Deployable {
           newOwner: self.preOwnerNft,
           responseDestination: myAddress(),
           customPayload: emptyCell(),
-          forwardAmount: ton("0.5"),
+          forwardAmount: 0,
           forwardPayload: emptySlice()
         }.toCell()
     });
@@ -139,8 +126,6 @@ contract Task4 with Deployable {
     self.preOwnerNft = newAddress(0, 0);
     self.isLocked = false;
   }
-
-
 
   get fun time(): Int {
     require(self.isLocked, "NFT is not locked");
