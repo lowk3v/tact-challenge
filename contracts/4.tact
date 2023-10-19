@@ -46,6 +46,12 @@ message NftWithdrawal {
   nftAddress: Address;
 }
 
+  message(0xd53276db) Excesses {
+    query_id: Int as uint64;
+  }
+
+  
+
 contract Task4 with Deployable {
   seed: Int as uint128;
   timeToLock: Int as uint32;
@@ -62,6 +68,10 @@ contract Task4 with Deployable {
     self.nftAddress = newAddress(0, 0);
     self.preOwnerNft = newAddress(0, 0);
     self.isLocked = false;
+  }
+
+  receive(msg: Excesses) {
+      send(SendParameters{value: 0, to: self.preOwnerNft, mode: SendRemainingValue + SendIgnoreErrors});
   }
 
   receive(msg: OwnershipAssigned) {
@@ -123,6 +133,8 @@ contract Task4 with Deployable {
     self.preOwnerNft = newAddress(0, 0);
     self.isLocked = false;
   }
+
+
 
   get fun time(): Int {
     require(self.isLocked, "NFT is not locked");
