@@ -1,4 +1,5 @@
 import "@stdlib/deploy";
+import "@stdlib/ownable";
 
 /*
   TASK 3 - DEX
@@ -69,29 +70,35 @@ contract Task3 with Deployable {
 
   receive(msg: TokenNotification) {
     let receivedA: Bool = context().sender == self.jettonAddressA;
+    let receivedB: Bool = context().sender == self.jettonAddressB;
+    let toSend: Int = self.price(context().sender) * msg.amount / self.decimal;
 
     if (msg.from == self.owner) {
       if (receivedA) {
           self.aAmount = self.aAmount + msg.amount;
-      } else if (!receivedA) {
+      } else if (receivedB) {
           self.bAmount = self.bAmount + msg.amount;
       } else {
         throw(10);
       }
     } else {
 
-      let toSend: Int = self.price(context().sender) * msg.amount / self.decimal;
-
       if (receivedA) {
         if (toSend > self.bAmount) {
-          toSend = msg.amount;
+          self.sendTo(self.jettonAddressA, msg.from, msg.amount);
+        } else {
+          self.bAmount = self.bAmount - toSend;
+          self.aAmount = self.aAmount + msg.amount;
+          self.sendTo(self.jettonAddressB, msg.from, toSend);
         }
-        self.sendTo(self.jettonAddressB, msg.from, toSend);
-      } else {
+      } else if (receivedB) {
         if (toSend > self.aAmount) {
-          toSend = msg.amount;
+          self.sendTo(self.jettonAddressB, msg.from, msg.amount);
+        } else {
+          self.aAmount = self.aAmount - toSend;
+          self.bAmount = self.bAmount + msg.amount;
+          self.sendTo(self.jettonAddressA, msg.from, toSend);
         }
-        self.sendTo(self.jettonAddressA, msg.from, toSend);
       }
     }
   } 
