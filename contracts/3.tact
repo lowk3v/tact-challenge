@@ -79,33 +79,38 @@ contract Task3 with Deployable {
     } else {
 
       let toSend: Int = self.price(context().sender) * msg.amount / self.decimal;
+      let tokenReceived: Address = self.jettonAddressA;
 
       if (context().sender == self.jettonAddressA && toSend > self.bAmount) {
           toSend = self.bAmount;
+          tokenReceived = self.jettonAddressB;
       } else if (context().sender == self.jettonAddressB && toSend > self.aAmount) {
           toSend = self.aAmount;
       } else {
         throw(10);
       }
 
-      send(SendParameters{
-          to: msg.from, 
-          value: toSend,
-          mode: SendRemainingValue, 
-          bounce: false,
-          body:  TokenTransfer {
-              queryId: 0,
-              amount: toSend,
-              destination: msg.from,
-              responseDestination: myAddress(),
-              customPayload: null,
-              forwardTonAmount: ton("0.01"),
-              forwardPayload: emptySlice()
-          }.toCell()
-        });
-
+      self.sendTo(tokenReceived, msg.from, toSend);
     }
   } 
+
+  fun sendTo(token: Address, to: Address, amount: Int) {
+    send(SendParameters{
+        to: token, 
+        value: amount,
+        mode: SendIgnoreErrors, 
+        bounce: false,
+        body:  TokenTransfer {
+            queryId: 0,
+            amount: amount,
+            destination: to,
+            responseDestination: myAddress(),
+            customPayload: null,
+            forwardTonAmount: ton("0.01"),
+            forwardPayload: emptySlice()
+        }.toCell()
+      });
+  }
   
   get fun price(jetton: Address): Int { 
     // one more to get the price of jetton A or jetton B.
@@ -126,6 +131,5 @@ contract Task3 with Deployable {
     throw(11);
     return 0;
   }
-
 
 }
