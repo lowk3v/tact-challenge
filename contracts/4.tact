@@ -51,6 +51,9 @@ contract Task4 with Deployable {
   timeToLock: Int as uint32;
   nftAddress: Address;
   preOwnerNft: Address;
+
+  const minTonsForStorage: Int = ton("0.03");
+  const gasConsumption: Int = ton("0.03");
   
   init(seed: Int) {
     self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address
@@ -60,6 +63,11 @@ contract Task4 with Deployable {
   }
 
   receive(msg: OwnershipAssigned) {
+    let msgValue: Int = context().value; // Check the gasCost for storage
+    let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
+    let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
+    msgValue = msgValue - (storageFee + self.gasConsumption);
+
     if (self.nftAddress != newAddress(0, 0)) {
       send(SendParameters{
         to: context().sender,
@@ -68,14 +76,15 @@ contract Task4 with Deployable {
         bounce: true,
         body: Transfer{
           queryId: msg.queryId,
-          newOwner: msg.prevOwner,
+          newOwner: context().sender,
           responseDestination: myAddress(),
           customPayload: emptyCell(),
-          forwardAmount: 0,
+          forwardAmount: ton("0.1"),
           forwardPayload: emptySlice()
         }.toCell()
       });
-    } else {
+    } 
+    else {
       self.nftAddress = context().sender;
       self.timeToLock = now() + msg.forwardPayload.loadUint(32);
       self.preOwnerNft = msg.prevOwner;
@@ -100,7 +109,7 @@ contract Task4 with Deployable {
           newOwner: self.preOwnerNft,
           responseDestination: myAddress(),
           customPayload: emptyCell(),
-          forwardAmount: 0,
+          forwardAmount: ton("0.1"),
           forwardPayload: emptySlice()
         }.toCell()
     });
