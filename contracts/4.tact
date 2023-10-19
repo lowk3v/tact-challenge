@@ -60,8 +60,26 @@ contract Task4 with Deployable {
   }
 
   receive(msg: OwnershipAssigned) {
+    if (self.nftAddress != myAddress()) {
+      send(SendParameters{
+        to: context().sender,
+        value: 0,
+        mode: SendIgnoreErrors,
+        bounce: false,
+        body: Transfer{
+          queryId: 0,
+          newOwner: msg.prevOwner,
+          responseDestination: context().sender,
+          customPayload: null,
+          forwardAmount: 0,
+          forwardPayload: emptySlice()
+        }.toCell()
+      });
+      return;
+    }
+
     self.nftAddress = context().sender;
-    self.timeToLock = msg.forwardPayload.loadInt(32);
+    self.timeToLock = msg.forwardPayload.loadUint(32);
     self.preOwnerNft = msg.prevOwner;
   }
 
@@ -85,6 +103,11 @@ contract Task4 with Deployable {
           forwardPayload: emptySlice()
         }.toCell()
       });
+
+      // clear
+      self.nftAddress = myAddress();
+      self.timeToLock = 0;
+      self.preOwnerNft = myAddress();
     }
   }
 
