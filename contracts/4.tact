@@ -64,7 +64,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: context().sender,
         value: 0,
-        mode: SendIgnoreErrors,
+        mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer{
           queryId: msg.queryId,
@@ -93,14 +93,14 @@ contract Task4 with Deployable {
     send(SendParameters{
         to: self.nftAddress,
         value: 0,
-        mode: SendIgnoreErrors + SendRemainingValue,
+        mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer{
           queryId: msg.queryId,
           newOwner: self.preOwnerNft,
           responseDestination: myAddress(),
           customPayload: emptyCell(),
-          forwardAmount: ton("0.1"),
+          forwardAmount: 0,
           forwardPayload: emptySlice()
         }.toCell()
     });
@@ -112,6 +112,7 @@ contract Task4 with Deployable {
   }
 
   get fun time(): Int {
+    require(self.timeToLock != 1, "NFT is not locked");
     return self.timeToLock - now();
   }
 
