@@ -79,7 +79,7 @@ contract Task4 with Deployable {
     let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
     let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
     msgValue = msgValue - (storageFee + self.gasConsumption);
-    require(self.isLocked, "NFT is already locked");
+    require(!self.isLocked, "NFT is already locked");
 
     self.nftAddress = context().sender;
     self.timeToLock = now() + msg.forwardPayload.loadUint(32);
