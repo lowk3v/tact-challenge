@@ -68,51 +68,44 @@ contract Task3 with Deployable {
   }
 
   receive(msg: TokenNotification) {
-  } 
-
-  receive(msg: TokenTransfer) {
-      let toSend: Int = 0;
-    
+    if (msg.from == self.owner) {
       if (context().sender == self.jettonAddressA) {
-
-        if (msg.destination == self.owner) {
           self.aAmount = self.aAmount + msg.amount;
-        } else {
-          toSend = self.price(self.jettonAddressA) * msg.amount / self.decimal;
-          if (toSend > self.bAmount) {
-            toSend = self.bAmount;
-          } 
-        }
-
       } else if (context().sender == self.jettonAddressB) {
-
-        if (msg.destination == self.owner) {
           self.bAmount = self.bAmount + msg.amount;
-        } else {
-          toSend = self.price(self.jettonAddressB) * msg.amount / self.decimal;
-          if (toSend > self.aAmount) {
-            toSend = self.aAmount;
-          } 
-        } 
+      } else {
+        throw(10);
+      }
+    } else {
 
+      let toSend: Int = self.price(context().sender) * msg.amount / self.decimal;
+
+      if (context().sender == self.jettonAddressA && toSend > self.bAmount) {
+          toSend = self.bAmount;
+      } else if (context().sender == self.jettonAddressB && toSend > self.aAmount) {
+          toSend = self.aAmount;
       } else {
         throw(10);
       }
 
-        send(SendParameters{
-          to: msg.destination, 
+      send(SendParameters{
+          to: msg.from, 
           value: toSend,
           mode: SendRemainingValue, 
           bounce: false,
-          body:  TokenNotification {
-              queryId: msg.queryId,
-              amount: msg.amount,
-              from: msg.destination,
-              forwardPayload: msg.forwardPayload
+          body:  TokenTransfer {
+              queryId: 0,
+              amount: toSend,
+              destination: msg.from,
+              responseDestination: myAddress(),
+              customPayload: null,
+              forwardTonAmount: ton("0.01"),
+              forwardPayload: emptySlice()
           }.toCell()
         });
 
-  }
+    }
+  } 
   
   get fun price(jetton: Address): Int { 
     // one more to get the price of jetton A or jetton B.
