@@ -1,7 +1,7 @@
 import "@stdlib/deploy";
 
 /*
-  TASK 2 - Proxy 
+  TASK 2 - Proxy
   Create a contract that forwards all received TONs
   to the admin contract (whose address is set in init_store).
   Message from this proxy contract to the admin contract should contain:
@@ -24,10 +24,29 @@ contract Task2 with Deployable {
   init(admin: Address) {
     self.admin = admin;
   }
-  
+
   receive(msg: Refund) {
+    require(msg.sender == self.admin, "must be admin");
+    send(SendParameters{
+        to: sender(),
+        bounce: true,
+        value: context().value,
+        mode: SendRemainingValue + SendIgnoreErrors
+    });
   }
 
   receive(msg: Slice) {
+    send(SendParameters{
+        to: self.admin,
+        bounce: true,
+        value: context().value,
+        mode: SendRemainingValue + SendIgnoreErrors,
+        body: beginCell()
+                .storeRef(
+                  beginCell().storeSlice(msg).endCell()
+                )
+                .storeAddress(sender())
+              .endCell()
+    });
   }
 }
