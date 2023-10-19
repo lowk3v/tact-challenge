@@ -79,29 +79,35 @@ contract Task4 with Deployable {
     let tonBalanceBeforeMsg: Int = myBalance() - msgValue;
     let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
     msgValue = msgValue - (storageFee + self.gasConsumption);
+    require(self.isLocked, "NFT is already locked");
 
-    if (self.isLocked) {
-      send(SendParameters{
-        to: context().sender,
-        value: 0,
-        mode: SendIgnoreErrors,
-        bounce: true,
-        body: Transfer{
-          queryId: msg.queryId,
-          newOwner: context().sender,
-          responseDestination: myAddress(),
-          customPayload: emptyCell(),
-          forwardAmount: ton("0.5"),
-          forwardPayload: emptySlice()
-        }.toCell()
-      });
-    } 
-    else {
-      self.nftAddress = context().sender;
-      self.timeToLock = now() + msg.forwardPayload.loadUint(32);
-      self.preOwnerNft = msg.prevOwner;
-      self.isLocked = true;
-    }
+    self.nftAddress = context().sender;
+    self.timeToLock = now() + msg.forwardPayload.loadUint(32);
+    self.preOwnerNft = msg.prevOwner;
+    self.isLocked = true;
+  
+    // if (self.isLocked) {
+    //   send(SendParameters{
+    //     to: context().sender,
+    //     value: 0,
+    //     mode: SendIgnoreErrors,
+    //     bounce: true,
+    //     body: Transfer{
+    //       queryId: msg.queryId,
+    //       newOwner: context().sender,
+    //       responseDestination: myAddress(),
+    //       customPayload: emptyCell(),
+    //       forwardAmount: ton("0.5"),
+    //       forwardPayload: emptySlice()
+    //     }.toCell()
+    //   });
+    // } 
+    // else {
+    //   self.nftAddress = context().sender;
+    //   self.timeToLock = now() + msg.forwardPayload.loadUint(32);
+    //   self.preOwnerNft = msg.prevOwner;
+    //   self.isLocked = true;
+    // }
   }
 
   receive(msg: NftWithdrawal) {
