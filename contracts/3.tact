@@ -9,7 +9,7 @@ import "@stdlib/deploy";
   Price for the jetton A in swap B->A should be calculated by formula "amountOfJettonAOnContract * decimal / amountOfJettonBOnContract".
   Token prices must be decimalized for accuracy, so it is the prices that must be adjusted to decimal 1e9.
   Decimals are only needed for price accuracy. It should be set as 1e9.
-  So, if smart contract has 10 of jetton A and 2 of jetton B, then after sending 1 jetton B you should receive 5 of jettons A.
+  test: So, if smart contract has 10 of jetton A and 2 of jetton B, then after sending 1 jetton B you should receive 5 of jettons A.
 
   Example formula for amountOfAJettonToSend in B->A swap will be
   (amountOfJettonAOnContract * decimal / amountOfJettonBOnContract) * amountOfTokenBToSwap / decimal
@@ -69,11 +69,70 @@ contract Task3 with Deployable {
 
   receive(msg: TokenNotification) {
   } 
+
+  receive(msg: TokenTransfer) {
+      let toSend: Int = 0;
+    
+      if (context().sender == self.jettonAddressA) {
+
+        if (msg.destination == self.owner) {
+          self.aAmount = self.aAmount + msg.amount;
+        } else {
+          toSend = self.price(self.jettonAddressA) * msg.amount / self.decimal;
+          if (toSend > self.bAmount) {
+            toSend = self.bAmount;
+          } 
+        }
+
+      } else if (context().sender == self.jettonAddressB) {
+
+        if (msg.destination == self.owner) {
+          self.bAmount = self.bAmount + msg.amount;
+        } else {
+          toSend = self.price(self.jettonAddressB) * msg.amount / self.decimal;
+          if (toSend > self.aAmount) {
+            toSend = self.aAmount;
+          } 
+        } 
+
+      } else {
+        throw(10);
+      }
+
+        send(SendParameters{
+          to: msg.destination, 
+          value: toSend,
+          mode: SendRemainingValue, 
+          bounce: false,
+          body:  TokenNotification {
+              queryId: msg.queryId,
+              amount: msg.amount,
+              from: msg.destination,
+              forwardPayload: msg.forwardPayload
+          }.toCell()
+        });
+
+  }
   
   get fun price(jetton: Address): Int { 
-    
+    // one more to get the price of jetton A or jetton B.
+    if (jetton == self.jettonAddressA) {
+      return self.aAmount * self.decimal / self.bAmount;
+    } 
+    return self.bAmount * self.decimal / self.aAmount;
   }
   
   get fun balance(jetton: Address): Int { 
+    // Implement a getter that returns the number of jettons in the pool and
+    // one more to get the price of jetton A or jetton B.
+    if (jetton == self.jettonAddressA) {
+      return self.aAmount;
+    } else if (jetton == self.jettonAddressB) {
+      return self.bAmount;
+    } 
+    throw(11);
+    return 0;
   }
+
+
 }
