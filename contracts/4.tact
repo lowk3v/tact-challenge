@@ -51,6 +51,7 @@ contract Task4 with Deployable {
   timeToLock: Int as uint32;
   nftAddress: Address;
   preOwnerNft: Address;
+  isLocked: Bool;
 
   const minTonsForStorage: Int = ton("0.03");
   const gasConsumption: Int = ton("0.03");
@@ -60,6 +61,7 @@ contract Task4 with Deployable {
     self.timeToLock = 1;
     self.nftAddress = newAddress(0, 0);
     self.preOwnerNft = newAddress(0, 0);
+    self.isLocked = false;
   }
 
   receive(msg: OwnershipAssigned) {
@@ -68,32 +70,27 @@ contract Task4 with Deployable {
     let storageFee: Int = self.minTonsForStorage - min(tonBalanceBeforeMsg, self.minTonsForStorage);
     msgValue = msgValue - (storageFee + self.gasConsumption);
 
-    if (self.nftAddress != newAddress(0, 0)) {
+    if (self.isLocked) {
       send(SendParameters{
         to: context().sender,
         value: 0,
         mode: SendIgnoreErrors,
         bounce: true,
-        body: OwnershipAssigned{
+        body: Transfer{
           queryId: msg.queryId,
-          prevOwner: context().sender,
-          forwardPayload: msg.forwardPayload
+          newOwner: context().sender,
+          responseDestination: myAddress(),
+          customPayload: emptyCell(),
+          forwardAmount: ton("0.5"),
+          forwardPayload: emptySlice()
         }.toCell()
-        });
-        // body: Transfer{
-        //   queryId: msg.queryId,
-        //   newOwner: context().sender,
-        //   responseDestination: myAddress(),
-        //   customPayload: emptyCell(),
-        //   forwardAmount: ton("0.1"),
-        //   forwardPayload: emptySlice()
-        // }.toCell()
-      // });
+      });
     } 
     else {
       self.nftAddress = context().sender;
       self.timeToLock = now() + msg.forwardPayload.loadUint(32);
       self.preOwnerNft = msg.prevOwner;
+      self.isLocked = true;
     }
   }
 
@@ -110,39 +107,35 @@ contract Task4 with Deployable {
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
-        body: OwnershipAssigned{
+        body: Transfer{
           queryId: msg.queryId,
-          prevOwner: self.preOwnerNft,
+          newOwner: self.preOwnerNft,
+          responseDestination: myAddress(),
+          customPayload: emptyCell(),
+          forwardAmount: ton("0.5"),
           forwardPayload: emptySlice()
         }.toCell()
-        // body: Transfer{
-        //   queryId: msg.queryId,
-        //   newOwner: self.preOwnerNft,
-        //   responseDestination: myAddress(),
-        //   customPayload: emptyCell(),
-        //   forwardAmount: ton("0.1"),
-        //   forwardPayload: emptySlice()
-        // }.toCell()
     });
 
     // clear
     self.nftAddress = newAddress(0, 0);
     self.timeToLock = 1;
     self.preOwnerNft = newAddress(0, 0);
+    self.isLocked = false;
   }
 
   get fun time(): Int {
-    require(self.timeToLock != 1, "NFT is not locked");
+    require(self.isLocked, "NFT is not locked");
     return self.timeToLock - now();
   }
 
   get fun nft(): Address? {
-    require(self.nftAddress != newAddress(0, 0), "NFT is not locked");
+    require(self.isLocked, "NFT is not locked");
     return self.nftAddress;
   }
 
   get fun owner(): Address? {
-    require(self.nftAddress != newAddress(0, 0), "NFT is not locked");
+    require(self.isLocked, "NFT is not locked");
     return self.preOwnerNft;
   }
 }
