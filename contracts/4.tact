@@ -103,6 +103,12 @@ contract Task4 with Deployable {
       self.reply("NFT is still locked".asComment());
       return;
     } 
+
+    // clear
+    self.nftAddress = newAddress(0, 0);
+    self.timeToLock = 1;
+    self.preOwnerNft = newAddress(0, 0);
+    self.isLocked = false;
     
     send(SendParameters{
         to: self.nftAddress,
@@ -118,12 +124,7 @@ contract Task4 with Deployable {
           forwardPayload: emptySlice()
         }.toCell()
     });
-
-    // clear
-    self.nftAddress = newAddress(0, 0);
-    self.timeToLock = 1;
-    self.preOwnerNft = newAddress(0, 0);
-    self.isLocked = false;
+   
   }
 
   get fun time(): Int {
