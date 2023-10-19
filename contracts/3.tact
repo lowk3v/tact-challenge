@@ -69,19 +69,20 @@ contract Task3 with Deployable {
   }
 
   receive(msg: TokenNotification) {
-    if (context().sender != self.jettonAddressA || context().sender != self.jettonAddressB) {
-      throw(10);
-    }
+    let receivedA: Bool = context().sender == self.jettonAddressA;
+    let receivedB: Bool = context().sender == self.jettonAddressB;
 
     if (msg.from == self.owner) {
-      if (context().sender == self.jettonAddressA) {
+      if (receivedA) {
           self.aAmount = self.aAmount + msg.amount;
-          return;
-      } 
-      self.bAmount = self.bAmount + msg.amount;
+      } else if (receivedB) {
+          self.bAmount = self.bAmount + msg.amount;
+      } else {
+        throw(10);
+      }
     } else {
 
-      if (context().sender == self.jettonAddressA) {
+      if (receivedA) {
         // A -> B
         let toSend: Int = (self.bAmount * self.decimal / self.aAmount) * msg.amount / self.decimal;
         if (toSend > self.bAmount) {
@@ -91,17 +92,18 @@ contract Task3 with Deployable {
           self.aAmount = self.aAmount + msg.amount;
           self.sendTo(self.jettonAddressB, msg.from, toSend);
         }
-        return;
-      } 
-      
-      // B -> A
-      let toSend: Int = (self.aAmount * self.decimal / self.bAmount) * msg.amount / self.decimal;
-      if (toSend > self.aAmount) {
-        self.sendTo(self.jettonAddressB, msg.from, msg.amount);
+      } else if (receivedB) {
+        // B -> A
+        let toSend: Int = (self.aAmount * self.decimal / self.bAmount) * msg.amount / self.decimal;
+        if (toSend > self.aAmount) {
+          self.sendTo(self.jettonAddressB, msg.from, msg.amount);
+        } else {
+          self.aAmount = self.aAmount - toSend;
+          self.bAmount = self.bAmount + msg.amount;
+          self.sendTo(self.jettonAddressA, msg.from, toSend);
+        }
       } else {
-        self.aAmount = self.aAmount - toSend;
-        self.bAmount = self.bAmount + msg.amount;
-        self.sendTo(self.jettonAddressA, msg.from, toSend);
+        throw(10);
       }
     }
   } 
@@ -111,7 +113,7 @@ contract Task3 with Deployable {
         to: token, 
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors, 
-        bounce: false,
+        bounce: true,
         body:  TokenTransfer {
             queryId: 0,
             amount: amount,
@@ -125,6 +127,7 @@ contract Task3 with Deployable {
   }
   
   get fun price(jetton: Address): Int { 
+    // one more to get the price of jetton A or jetton B.
     if (jetton == self.jettonAddressA) {
       // A -> B
       return self.bAmount * self.decimal / self.aAmount;
@@ -134,6 +137,8 @@ contract Task3 with Deployable {
   }
   
   get fun balance(jetton: Address): Int { 
+    // Implement a getter that returns the number of jettons in the pool and
+    // one more to get the price of jetton A or jetton B.
     if (jetton == self.jettonAddressA) {
       return self.aAmount;
     } else if (jetton == self.jettonAddressB) {
