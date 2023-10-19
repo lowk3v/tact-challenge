@@ -74,15 +74,21 @@ contract Task4 with Deployable {
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
-        body: Transfer{
+        body: OwnershipAssigned{
           queryId: msg.queryId,
-          newOwner: context().sender,
-          responseDestination: myAddress(),
-          customPayload: emptyCell(),
-          forwardAmount: ton("0.1"),
-          forwardPayload: emptySlice()
+          prevOwner: context().sender,
+          forwardPayload: msg.forwardPayload
         }.toCell()
-      });
+        });
+        // body: Transfer{
+        //   queryId: msg.queryId,
+        //   newOwner: context().sender,
+        //   responseDestination: myAddress(),
+        //   customPayload: emptyCell(),
+        //   forwardAmount: ton("0.1"),
+        //   forwardPayload: emptySlice()
+        // }.toCell()
+      // });
     } 
     else {
       self.nftAddress = context().sender;
