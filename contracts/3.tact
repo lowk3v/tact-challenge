@@ -84,12 +84,12 @@ contract Task3 with Deployable {
 
       if (receivedA) {
         if (toSend > self.bAmount) {
-          toSend = self.bAmount;
+          toSend = msg.amount;
         }
         self.sendTo(self.jettonAddressB, msg.from, toSend);
       } else {
         if (toSend > self.aAmount) {
-          toSend = self.aAmount;
+          toSend = msg.amount;
         }
         self.sendTo(self.jettonAddressA, msg.from, toSend);
       }
@@ -100,7 +100,7 @@ contract Task3 with Deployable {
     send(SendParameters{
         to: token, 
         value: amount,
-        mode: SendIgnoreErrors, 
+        mode: 0, 
         bounce: false,
         body:  TokenTransfer {
             queryId: 0,
@@ -110,7 +110,9 @@ contract Task3 with Deployable {
             customPayload: null,
             forwardTonAmount: ton("0.01"),
             forwardPayload: emptySlice()
-        }.toCell()
+        }.toCell(),
+        code: null,
+        data: null
       });
   }
   
