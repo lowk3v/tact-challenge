@@ -66,35 +66,34 @@ contract Task4 with Deployable {
   }
 
   receive(msg: OwnershipAssigned) {
-    require(!self.isLocked, "NFT is already locked");
-
-    self.nftAddress = context().sender;
-    self.timeToLock = now() + msg.forwardPayload.loadUint(32);
-    self.preOwnerNft = msg.prevOwner;
-    self.isLocked = true;
+    // require(!self.isLocked, "NFT is already locked");
+    // self.nftAddress = context().sender;
+    // self.timeToLock = now() + msg.forwardPayload.loadUint(32);
+    // self.preOwnerNft = msg.prevOwner;
+    // self.isLocked = true;
   
-    // if (self.isLocked) {
-    //   send(SendParameters{
-    //     to: context().sender,
-    //     value: 0,
-    //     mode: SendIgnoreErrors,
-    //     bounce: true,
-    //     body: Transfer{
-    //       queryId: msg.queryId,
-    //       newOwner: context().sender,
-    //       responseDestination: myAddress(),
-    //       customPayload: emptyCell(),
-    //       forwardAmount: ton("0.5"),
-    //       forwardPayload: emptySlice()
-    //     }.toCell()
-    //   });
-    // } 
-    // else {
-    //   self.nftAddress = context().sender;
-    //   self.timeToLock = now() + msg.forwardPayload.loadUint(32);
-    //   self.preOwnerNft = msg.prevOwner;
-    //   self.isLocked = true;
-    // }
+    if (self.isLocked) {
+      send(SendParameters{
+        to: context().sender,
+        value: myBalance(),
+        mode: SendIgnoreErrors,
+        bounce: true,
+        body: Transfer{
+          queryId: msg.queryId,
+          newOwner: context().sender,
+          responseDestination: myAddress(),
+          customPayload: emptyCell(),
+          forwardAmount: myBalance(),
+          forwardPayload: emptySlice()
+        }.toCell()
+      });
+    } 
+    else {
+      self.nftAddress = context().sender;
+      self.timeToLock = now() + msg.forwardPayload.loadUint(32);
+      self.preOwnerNft = msg.prevOwner;
+      self.isLocked = true;
+    }
   }
 
   receive(msg: NftWithdrawal) {
@@ -107,7 +106,7 @@ contract Task4 with Deployable {
     
     send(SendParameters{
         to: self.nftAddress,
-        value: 0,
+        value: myBalance(),
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer{
@@ -115,7 +114,7 @@ contract Task4 with Deployable {
           newOwner: self.preOwnerNft,
           responseDestination: myAddress(),
           customPayload: emptyCell(),
-          forwardAmount: 0,
+          forwardAmount: myBalance(),
           forwardPayload: emptySlice()
         }.toCell()
     });
