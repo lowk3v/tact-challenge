@@ -84,6 +84,7 @@ contract Task3 with Deployable {
     } else {
 
       if (receivedA) {
+        // A -> B
         let toSend: Int = (self.bAmount * self.decimal / self.aAmount) * msg.amount / self.decimal;
         if (toSend > self.bAmount) {
           self.sendTo(self.jettonAddressA, msg.from, msg.amount);
@@ -93,6 +94,7 @@ contract Task3 with Deployable {
           self.sendTo(self.jettonAddressB, msg.from, toSend);
         }
       } else if (receivedB) {
+        // B -> A
         let toSend: Int = (self.aAmount * self.decimal / self.bAmount) * msg.amount / self.decimal;
         if (toSend > self.aAmount) {
           self.sendTo(self.jettonAddressB, msg.from, msg.amount);
@@ -128,9 +130,11 @@ contract Task3 with Deployable {
   get fun price(jetton: Address): Int { 
     // one more to get the price of jetton A or jetton B.
     if (jetton == self.jettonAddressA) {
-      return self.aAmount * self.decimal / self.bAmount;
+      // A -> B
+      return self.bAmount * self.decimal / self.aAmount;
     } 
-    return self.bAmount * self.decimal / self.aAmount;
+    // B -> A
+    return self.aAmount * self.decimal / self.bAmount;
   }
   
   get fun balance(jetton: Address): Int { 
