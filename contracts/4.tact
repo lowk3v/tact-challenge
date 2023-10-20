@@ -49,15 +49,15 @@ message NftWithdrawal {
 contract Task4 with Deployable {
   seed: Int as uint128;
   timeToLock: Int as uint32;
-  nftAddress: Address;
-  preOwnerNft: Address;
+  nftAddress: Address?;
+  preOwnerNft: Address?;
   isLocked: Bool;
 
   init(seed: Int) {
     self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address
-    self.timeToLock = 1;
-    self.nftAddress = newAddress(0, 0);
-    self.preOwnerNft = newAddress(0, 0);
+    self.timeToLock = 0;
+    self.nftAddress = null;
+    self.preOwnerNft = null;
     self.isLocked = false;
   }
 
@@ -66,7 +66,7 @@ contract Task4 with Deployable {
       send(SendParameters{
         to: context().sender,
         value: 0,
-        mode: SendIgnoreErrors,
+        mode: SendRemainingValue,
         bounce: true,
         body: Transfer{
           queryId: msg.queryId,
@@ -88,46 +88,45 @@ contract Task4 with Deployable {
 
   receive(msg: NftWithdrawal) {
     require(context().sender == self.preOwnerNft, "Invalid sender");
+    require(self.nftAddress == msg.nftAddress, "NFT is not locked");
+
     if (self.timeToLock >= now()) {
       self.reply("NFT is still locked".asComment());
       return;
     } 
-
-    // clear
-    self.nftAddress = newAddress(0, 0);
-    self.timeToLock = 1;
-    self.preOwnerNft = newAddress(0, 0);
-    self.isLocked = false;
     
     send(SendParameters{
-        to: self.nftAddress,
+        to: self.nftAddress!!,
         value: myBalance(),
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer{
           queryId: msg.queryId,
-          newOwner: self.preOwnerNft,
+          newOwner: self.preOwnerNft!!,
           responseDestination: myAddress(),
           customPayload: emptyCell(),
           forwardAmount: myBalance(),
           forwardPayload: emptySlice()
         }.toCell()
     });
+
+    // clear
+    self.nftAddress = null;
+    self.timeToLock = 0;
+    self.preOwnerNft = null;
+    self.isLocked = false;
    
   }
 
   get fun time(): Int {
-    require(self.isLocked, "NFT is not locked");
-    return self.timeToLock - now();
+    return max(0, self.timeToLock - now());
   }
 
   get fun nft(): Address? {
-    require(self.isLocked, "NFT is not locked");
     return self.nftAddress;
   }
 
   get fun owner(): Address? {
-    require(self.isLocked, "NFT is not locked");
     return self.preOwnerNft;
   }
 }
