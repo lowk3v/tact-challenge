@@ -98,7 +98,6 @@ contract Task4 with Deployable {
         to: self.nftAddress!!,
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
-        bounce: true,
         body: Transfer{
           queryId: msg.queryId,
           newOwner: self.preOwnerNft!!,
