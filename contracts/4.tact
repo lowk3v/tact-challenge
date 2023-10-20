@@ -100,9 +100,9 @@ contract Task4 with Deployable {
         mode: SendRemainingValue + SendIgnoreErrors,
         bounce: true,
         body: Transfer{
-          queryId: 0,
-          newOwner: sender(),
-          responseDestination: sender(),
+          queryId: msg.queryId,
+          newOwner: self.preOwnerNft!!,
+          responseDestination: self.preOwnerNft!!,
           customPayload: null,
           forwardAmount: 0,
           forwardPayload: emptySlice()
