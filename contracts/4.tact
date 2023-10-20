@@ -110,9 +110,9 @@ contract Task4 with Deployable {
     });
 
     // clear
+    self.preOwnerNft = null;
     self.nftAddress = null;
     self.timeToLock = 0;
-    self.preOwnerNft = null;
     self.isLocked = false;
    
   }
